@@ -32,19 +32,25 @@ archives:
 checksum:
   name_template: 'checksums.txt'
 
-# Single, clean Docker configuration.
-# GoReleaser automatically uses the 'linux' binaries from the build matrix above.
+# This section is now a list of three separate Docker builds.
+# Each item targets a single architecture.
 dockers:
   - image_templates:
       - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-{{ .Arch }}"
       - "c0mmandercrud/{{ .ProjectName }}:v{{ .Version }}-{{ .Arch }}"
-    # Specify which architectures from the build matrix to use for Docker.
-    goarch:
-      - amd64
-      - arm64
-      - arm
-    goarm:
-      - '7'
+    goos: linux
+    goarch: amd64
+  - image_templates:
+      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-{{ .Arch }}"
+      - "c0mmandercrud/{{ .ProjectName }}:v{{ .Version }}-{{ .Arch }}"
+    goos: linux
+    goarch: arm64
+  - image_templates:
+      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-{{ .Arch }}"
+      - "c0mmandercrud/{{ .ProjectName }}:v{{ .Version }}-{{ .Arch }}"
+    goos: linux
+    goarch: arm
+    goarm: '7'
 
 docker_manifests:
   - name_template: "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}"
@@ -52,13 +58,11 @@ docker_manifests:
       - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-amd64"
       - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-arm64"
       - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-armv7"
-
   - name_template: "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}"
     image_templates:
       - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-amd64"
       - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm64"
       - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-armv7"
-
   - name_template: "c0mmandercrud/{{.ProjectName}}:latest"
     image_templates:
       - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-amd64"
