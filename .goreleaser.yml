@@ -33,43 +33,31 @@ archives:
 checksum:
   name_template: 'checksums.txt'
 
+# .goreleaser.yml
+
+# This section defines how to build the arch-specific images
 dockers:
   - image_templates:
-      - "ghcr.io/c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-amd64" # Remember to use your username
-      - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-amd64"
-    dockerfile: Dockerfile
-    build_flag_templates:
-      - "--platform=linux/amd64"
-
+      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-{{ .Arch }}"
+    goos: linux
+    goarch: amd64
   - image_templates:
-      - "ghcr.io/c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm7"
-      - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm7"
-    dockerfile: Dockerfile
-    goarch: arm
-    goarm: 7
-    build_flag_templates:
-      - "--platform=linux/arm/v7"
-
-  - image_templates:
-      - "ghcr.io/c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm64"
-      - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm64"
-    dockerfile: Dockerfile
+      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-{{ .Arch }}"
+    goos: linux
     goarch: arm64
-    build_flag_templates:
-      - "--platform=linux/arm64/v8"
+  - image_templates:
+      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-{{ .Arch }}"
+    goos: linux
+    goarch: arm
+    goarm: '7'
 
+# This section creates and PUSHES a multi-arch manifest to the registry
 docker_manifests:
-  # github
-  - name_template: "ghcr.io/c0mmandercrud/{{.ProjectName}}:v{{ .Version }}"
+  - name_template: "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}"
     image_templates:
-      - "ghcr.io/c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-amd64"
-      - "ghcr.io/c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm64"
-      - "ghcr.io/c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm7"
-  - name_template: "ghcr.io/c0mmandercrud/{{.ProjectName}}:latest"
-    image_templates:
-      - "ghcr.io/c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-amd64"
-      - "ghcr.io/c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm64"
-      - "ghcr.io/c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm7"
+      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-amd64"
+      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-arm64"
+      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-armv7"
 
   # dockerhub
   - name_template: "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}"
