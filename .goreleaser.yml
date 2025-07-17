@@ -35,15 +35,15 @@ checksum:
 
 dockers:
   - image_templates:
-      - "ghcr.io/YOUR-USERNAME/{{.ProjectName}}:v{{ .Version }}-amd64" # Remember to use your username
-      - "YOUR-USERNAME/{{.ProjectName}}:v{{ .Version }}-amd64"
+      - "ghcr.io/c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-amd64" # Remember to use your username
+      - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-amd64"
     dockerfile: Dockerfile
     build_flag_templates:
       - "--platform=linux/amd64"
 
   - image_templates:
-      - "ghcr.io/YOUR-USERNAME/{{.ProjectName}}:v{{ .Version }}-arm7"
-      - "YOUR-USERNAME/{{.ProjectName}}:v{{ .Version }}-arm7"
+      - "ghcr.io/c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm7"
+      - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm7"
     dockerfile: Dockerfile
     goarch: arm
     goarm: 7
@@ -51,8 +51,8 @@ dockers:
       - "--platform=linux/arm/v7"
 
   - image_templates:
-      - "ghcr.io/YOUR-USERNAME/{{.ProjectName}}:v{{ .Version }}-arm64"
-      - "YOUR-USERNAME/{{.ProjectName}}:v{{ .Version }}-arm64"
+      - "ghcr.io/c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm64"
+      - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm64"
     dockerfile: Dockerfile
     goarch: arm64
     build_flag_templates:
@@ -60,25 +60,25 @@ dockers:
 
 docker_manifests:
   # github
-  - name_template: "ghcr.io/YOUR-USERNAME/{{.ProjectName}}:v{{ .Version }}"
+  - name_template: "ghcr.io/c0mmandercrud/{{.ProjectName}}:v{{ .Version }}"
     image_templates:
-      - "ghcr.io/YOUR-USERNAME/{{.ProjectName}}:v{{ .Version }}-amd64"
-      - "ghcr.io/YOUR-USERNAME/{{.ProjectName}}:v{{ .Version }}-arm64"
-      - "ghcr.io/YOUR-USERNAME/{{.ProjectName}}:v{{ .Version }}-arm7"
-  - name_template: "ghcr.io/YOUR-USERNAME/{{.ProjectName}}:latest"
+      - "ghcr.io/c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-amd64"
+      - "ghcr.io/c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm64"
+      - "ghcr.io/c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm7"
+  - name_template: "ghcr.io/c0mmandercrud/{{.ProjectName}}:latest"
     image_templates:
-      - "ghcr.io/YOUR-USERNAME/{{.ProjectName}}:v{{ .Version }}-amd64"
-      - "ghcr.io/YOUR-USERNAME/{{.ProjectName}}:v{{ .Version }}-arm64"
-      - "ghcr.io/YOUR-USERNAME/{{.ProjectName}}:v{{ .Version }}-arm7"
+      - "ghcr.io/c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-amd64"
+      - "ghcr.io/c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm64"
+      - "ghcr.io/c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm7"
 
   # dockerhub
-  - name_template: "YOUR-USERNAME/{{.ProjectName}}:v{{ .Version }}"
+  - name_template: "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}"
     image_templates:
-      - "YOUR-USERNAME/{{.ProjectName}}:v{{ .Version }}-amd64"
-      - "YOUR-USERNAME/{{.ProjectName}}:v{{ .Version }}-arm64"
-      - "YOUR-USERNAME/{{.ProjectName}}:v{{ .Version }}-arm7"
-  - name_template: "YOUR-USERNAME/{{.ProjectName}}:latest"
+      - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-amd64"
+      - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm64"
+      - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm7"
+  - name_template: "c0mmandercrud/{{.ProjectName}}:latest"
     image_templates:
-      - "YOUR-USERNAME/{{.ProjectName}}:v{{ .Version }}-amd64"
-      - "YOUR-USERNAME/{{.ProjectName}}:v{{ .Version }}-arm64"
-      - "YOUR-USERNAME/{{.ProjectName}}:v{{ .Version }}-arm7"
+      - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-amd64"
+      - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm64"
+      - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm7"
