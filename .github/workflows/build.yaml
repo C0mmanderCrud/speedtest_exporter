@@ -38,5 +38,6 @@ jobs:
         with:
           version: latest
           args: release --clean
+          #removed snaphost
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
