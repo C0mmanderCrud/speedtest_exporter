@@ -1,44 +1,45 @@
-
+# .github/workflows/build.yml
 name: build
 
 on:
-  workflow_dispatch:
   push:
     tags:
-      - 'v*' # Triggers on tags like v1.0, v1.1.2, etc.
-# You can keep the pull_request trigger for testing the build process
-  pull_request:
-    branches:
-      - main
+      - 'v*'
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Add this permissions block to grant write access to packages
+    permissions:
+      contents: read
+      packages: write
+
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # This is the ONLY login step you need.
       - name: Login to GitHub Container Registry
-        # UPDATE to the current major version
         uses: docker/login-action@v3
         with:
           registry: "ghcr.io"
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.24.5 # Or your desired version
+          go-version: 1.22.5 # Or your desired version
 
       - name: Run GoReleaser
-        # UPDATE to the current major version
         uses: goreleaser/goreleaser-action@v5
         with:
           version: latest
           args: release --clean
-          #removed snaphost
         env:
+          # The GITHUB_TOKEN is used by both the login action
+          # and GoReleaser to publish the package.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
