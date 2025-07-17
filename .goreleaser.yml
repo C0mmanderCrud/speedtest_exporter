@@ -1,6 +1,5 @@
 # .goreleaser.yml
 version: 1
-
 project_name: speedtest_exporter
 
 before:
@@ -9,39 +8,20 @@ before:
     - go test ./...
 
 builds:
-  # A single, dedicated build for the linux/amd64 Docker image
-  - id: docker
+  # A single build for linux/amd64 that Docker will use
+  - id: linux-amd64
     main: ./cmd/speedtest_exporter/main.go
     env: [ "CGO_ENABLED=0" ]
     goos: [ "linux" ]
     goarch: [ "amd64" ]
 
-  # A separate build for other release archives (e.g., windows, mac)
-  - id: archives
-    main: ./cmd/speedtest_exporter/main.go
-    env: [ "CGO_ENABLED=0" ]
-    goos: [ "windows", "darwin" ]
-    goarch: [ "amd64" ]
-
-archives:
-  - id: default
-    builds:
-      - archives
-    name_template: "{{ .ProjectName }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-    format_overrides:
-      - goos: windows
-        format: zip
-
-checksum:
-  name_template: 'checksums.txt'
-
-# A single Docker block that uses the dedicated 'docker' build from above.
-# The image tags no longer include the {{ .Arch }} variable.
 dockers:
-  - builds:
-      - docker
+  # This block implicitly uses the linux/amd64 build from above.
+  # It does NOT use a 'builds:' key.
+  - goos: linux
+    goarch: amd64
     image_templates:
       - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}"
       - "c0mmandercrud/{{ .ProjectName }}:latest-snapshot"
 
-# The docker_manifests section has been completely removed as it is not needed.
+# docker_manifests is not needed for a single docker image
