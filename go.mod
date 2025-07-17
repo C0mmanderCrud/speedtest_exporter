@@ -1,6 +1,6 @@
 module github.com/danopstech/speedtest_exporter
 
-go 1.16
+go 1.24.5
 
 require (
 	github.com/golang/protobuf v1.5.1 // indirect
