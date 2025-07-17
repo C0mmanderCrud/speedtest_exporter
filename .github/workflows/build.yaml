@@ -2,6 +2,7 @@
 name: build
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - 'v*' # Triggers on tags like v1.0, v1.1.2, etc.
