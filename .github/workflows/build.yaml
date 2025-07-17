@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Login to GitHub Container Registry
-        # Use the current major version of the action
+        # UPDATE to the current major version
         uses: docker/login-action@v3
         with:
           registry: "ghcr.io"
@@ -25,19 +25,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # This is required for GoReleaser to create a changelog
           fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.24.5
+          go-version: 1.24.5 # Or your desired version
 
       - name: Run GoReleaser
+        # UPDATE to the current major version
         uses: goreleaser/goreleaser-action@v5
         with:
           version: latest
           args: release --snapshot --clean
         env:
-          # Add the required GITHUB_TOKEN for the GoReleaser step
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
