@@ -7,6 +7,7 @@ before:
   hooks:
     - go mod tidy
     - go test ./...
+
 builds:
   - main: ./cmd/speedtest_exporter/main.go
     env:
@@ -28,22 +29,17 @@ archives:
     format_overrides:
       - goos: windows
         format: zip
-    # Removed the 'files: - none*' line. Add back with real files if needed.
-    # e.g., files: [ "LICENSE.md", "README.md" ]
 
 checksum:
   name_template: 'checksums.txt'
 
-# This section now builds images for BOTH ghcr.io and Docker Hub
+# This section now has corrected spacing and no duplicate sections.
 dockers:
   - image_templates:
       - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-{{ .Arch }}"
+      - "c0mmandercrud/{{ .ProjectName }}:v{{ .Version }}-{{ .Arch }}"
     goos: linux
     goarch: amd64
-  - image_templates:
-      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-{{ .Arch }}"
-    goos: linux
-    goarch: arm64
   - image_templates:
       - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-{{ .Arch }}"
       - "c0mmandercrud/{{ .ProjectName }}:v{{ .Version }}-{{ .Arch }}"
@@ -56,7 +52,6 @@ dockers:
     goarch: arm
     goarm: '7'
 
-# Manifests are created from the images built above
 docker_manifests:
   - name_template: "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}"
     image_templates:
@@ -64,16 +59,13 @@ docker_manifests:
       - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-arm64"
       - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-armv7"
 
-  # Docker Hub manifests for release builds
   - name_template: "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}"
     image_templates:
       - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-amd64"
       - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm64"
-      # Corrected from 'arm7' to 'armv7'
       - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-armv7"
   - name_template: "c0mmandercrud/{{.ProjectName}}:latest"
     image_templates:
       - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-amd64"
       - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm64"
-      # Corrected from 'arm7' to 'armv7'
       - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-armv7"
