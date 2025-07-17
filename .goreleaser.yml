@@ -8,44 +8,23 @@ before:
     - go mod tidy
     - go test ./...
 
-# We now have dedicated build blocks, each with a unique ID.
 builds:
-  # Linux builds specifically for Docker
-  - id: speedtest-exporter-linux-amd64
-    main: ./cmd/speedtest_exporter/main.go
-    env: [ "CGO_ENABLED=0" ]
-    goos: [ "linux" ]
-    goarch: [ "amd64" ]
-  - id: speedtest-exporter-linux-arm64
-    main: ./cmd/speedtest_exporter/main.go
-    env: [ "CGO_ENABLED=0" ]
-    goos: [ "linux" ]
-    goarch: [ "arm64" ]
-  - id: speedtest-exporter-linux-arm7
-    main: ./cmd/speedtest_exporter/main.go
-    env: [ "CGO_ENABLED=0" ]
-    goos: [ "linux" ]
-    goarch: [ "arm" ]
-    goarm: [ "7" ]
-
-  # Other builds for archives (Windows, Darwin)
-  - id: archives
-    main: ./cmd/speedtest_exporter/main.go
-    env: [ "CGO_ENABLED=0" ]
+  - main: ./cmd/speedtest_exporter/main.go
+    env:
+      - CGO_ENABLED=0
     goos:
+      - linux
       - windows
       - darwin
     goarch:
       - amd64
-      - 386
+      - arm
+      - arm64
+    goarm:
+      - '7'
 
 archives:
-  - builds: # Point archives to the correct build IDs
-      - speedtest-exporter-linux-amd64
-      - speedtest-exporter-linux-arm64
-      - speedtest-exporter-linux-arm7
-      - archives
-    name_template: "{{ .ProjectName }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+  - name_template: "{{ .ProjectName }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
     format_overrides:
       - goos: windows
         format: zip
@@ -53,23 +32,19 @@ archives:
 checksum:
   name_template: 'checksums.txt'
 
-# Each docker block now points to a specific build ID, inheriting its context.
+# Single, clean Docker configuration.
+# GoReleaser automatically uses the 'linux' binaries from the build matrix above.
 dockers:
-  - builds:
-      - speedtest-exporter-linux-amd64
-    image_templates:
+  - image_templates:
       - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-{{ .Arch }}"
       - "c0mmandercrud/{{ .ProjectName }}:v{{ .Version }}-{{ .Arch }}"
-  - builds:
-      - speedtest-exporter-linux-arm64
-    image_templates:
-      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-{{ .Arch }}"
-      - "c0mmandercrud/{{ .ProjectName }}:v{{ .Version }}-{{ .Arch }}"
-  - builds:
-      - speedtest-exporter-linux-arm7
-    image_templates:
-      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-{{ .Arch }}"
-      - "c0mmandercrud/{{ .ProjectName }}:v{{ .Version }}-{{ .Arch }}"
+    # Specify which architectures from the build matrix to use for Docker.
+    goarch:
+      - amd64
+      - arm64
+      - arm
+    goarm:
+      - '7'
 
 docker_manifests:
   - name_template: "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}"
@@ -83,6 +58,7 @@ docker_manifests:
       - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-amd64"
       - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm64"
       - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-armv7"
+
   - name_template: "c0mmandercrud/{{.ProjectName}}:latest"
     image_templates:
       - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-amd64"
