@@ -58,3 +58,4 @@ jobs:
           channel: '#github-actions'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
+          # force update
