@@ -39,16 +39,16 @@ checksum:
 
 dockers:
   - image_templates:
-      - ghcr.io/danopstech/{{.ProjectName}}:v{{ .Version }}-amd64
-      - danopstech/{{.ProjectName}}:v{{ .Version }}-amd64
+      - ghcr.io/C0mmanderCrud/{{.ProjectName}}:v{{ .Version }}-amd64
+      - C0mmanderCrud/{{.ProjectName}}:v{{ .Version }}-amd64
     use_buildx: true
     dockerfile: Dockerfile
     build_flag_templates:
       - "--platform=linux/amd64"
 
   - image_templates:
-      - ghcr.io/danopstech/{{.ProjectName}}:v{{ .Version }}-arm7
-      - danopstech/{{.ProjectName}}:v{{ .Version }}-arm7
+      - ghcr.io/C0mmanderCrud/{{.ProjectName}}:v{{ .Version }}-arm7
+      - C0mmanderCrud/{{.ProjectName}}:v{{ .Version }}-arm7
     use_buildx: true
     dockerfile: Dockerfile
     goarch: arm
@@ -57,8 +57,8 @@ dockers:
       - "--platform=linux/arm/v7"
 
   - image_templates:
-      - ghcr.io/danopstech/{{.ProjectName}}:v{{ .Version }}-arm64
-      - danopstech/{{.ProjectName}}:v{{ .Version }}-arm64
+      - ghcr.io/C0mmanderCrud/{{.ProjectName}}:v{{ .Version }}-arm64
+      - C0mmanderCrud/{{.ProjectName}}:v{{ .Version }}-arm64
     use_buildx: true
     dockerfile: Dockerfile
     goarch: arm64
@@ -67,25 +67,25 @@ dockers:
 
 docker_manifests:
   # github
-  - name_template: ghcr.io/danopstech/{{.ProjectName}}:v{{ .Version }}
+  - name_template: ghcr.io/C0mmanderCrud/{{.ProjectName}}:v{{ .Version }}
     image_templates:
-      - ghcr.io/danopstech/{{.ProjectName}}:v{{ .Version }}-amd64
-      - ghcr.io/danopstech/{{.ProjectName}}:v{{ .Version }}-arm64
-      - ghcr.io/danopstech/{{.ProjectName}}:v{{ .Version }}-arm7
-  - name_template: ghcr.io/danopstech/{{.ProjectName}}:latest
+      - ghcr.io/C0mmanderCrud/{{.ProjectName}}:v{{ .Version }}-amd64
+      - ghcr.io/C0mmanderCrud/{{.ProjectName}}:v{{ .Version }}-arm64
+      - ghcr.io/C0mmanderCrud/{{.ProjectName}}:v{{ .Version }}-arm7
+  - name_template: ghcr.io/C0mmanderCrud/{{.ProjectName}}:latest
     image_templates:
-      - ghcr.io/danopstech/{{.ProjectName}}:v{{ .Version }}-amd64
-      - ghcr.io/danopstech/{{.ProjectName}}:v{{ .Version }}-arm64
-      - ghcr.io/danopstech/{{.ProjectName}}:v{{ .Version }}-arm7
+      - ghcr.io/C0mmanderCrud/{{.ProjectName}}:v{{ .Version }}-amd64
+      - ghcr.io/C0mmanderCrud/{{.ProjectName}}:v{{ .Version }}-arm64
+      - ghcr.io/C0mmanderCrud/{{.ProjectName}}:v{{ .Version }}-arm7
 
   # dockerhub
-  - name_template: danopstech/{{.ProjectName}}:v{{ .Version }}
+  - name_template: C0mmanderCrud/{{.ProjectName}}:v{{ .Version }}
     image_templates:
-      - danopstech/{{.ProjectName}}:v{{ .Version }}-amd64
-      - danopstech/{{.ProjectName}}:v{{ .Version }}-arm64
-      - danopstech/{{.ProjectName}}:v{{ .Version }}-arm7
-  - name_template: danopstech/{{.ProjectName}}:latest
+      - C0mmanderCrud/{{.ProjectName}}:v{{ .Version }}-amd64
+      - C0mmanderCrud/{{.ProjectName}}:v{{ .Version }}-arm64
+      - C0mmanderCrud/{{.ProjectName}}:v{{ .Version }}-arm7
+  - name_template: C0mmanderCrud/{{.ProjectName}}:latest
     image_templates:
-      - danopstech/{{.ProjectName}}:v{{ .Version }}-amd64
-      - danopstech/{{.ProjectName}}:v{{ .Version }}-arm64
-      - danopstech/{{.ProjectName}}:v{{ .Version }}-arm7
+      - C0mmanderCrud/{{.ProjectName}}:v{{ .Version }}-amd64
+      - C0mmanderCrud/{{.ProjectName}}:v{{ .Version }}-arm64
+      - C0mmanderCrud/{{.ProjectName}}:v{{ .Version }}-arm7
