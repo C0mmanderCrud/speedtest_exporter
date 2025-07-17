@@ -1,5 +1,5 @@
 # .goreleaser.yml
-version: 2
+version: 1
 
 project_name: speedtest_exporter
 
