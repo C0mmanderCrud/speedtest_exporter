@@ -20,6 +20,7 @@ dockers:
   # It does NOT use a 'builds:' key.
   - goos: linux
     goarch: amd64
+    use: buildx
     image_templates:
       - "ghcr.io/c0mmandercrud/{{ .ProjectName }}:{{ .ShortCommit }}"
       - "c0mmandercrud/{{ .ProjectName }}:latest-snapshot"
