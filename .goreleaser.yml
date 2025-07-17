@@ -37,12 +37,13 @@ checksum:
 # This section now builds images for BOTH ghcr.io and Docker Hub
 dockers:
   - image_templates:
-      # Snapshot image for ghcr.io
       - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-{{ .Arch }}"
-      # Release image for Docker Hub
-      - "c0mmandercrud/{{ .ProjectName }}:v{{ .Version }}-{{ .Arch }}"
     goos: linux
     goarch: amd64
+  - image_templates:
+      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-{{ .Arch }}"
+    goos: linux
+    goarch: arm64
   - image_templates:
       - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-{{ .Arch }}"
       - "c0mmandercrud/{{ .ProjectName }}:v{{ .Version }}-{{ .Arch }}"
@@ -57,7 +58,6 @@ dockers:
 
 # Manifests are created from the images built above
 docker_manifests:
-  # ghcr.io manifest for snapshot builds
   - name_template: "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}"
     image_templates:
       - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-amd64"
