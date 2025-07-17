@@ -1,3 +1,4 @@
+# .goreleaser.yml
 version: 2
 
 project_name: speedtest_exporter
@@ -20,53 +21,59 @@ builds:
       - arm
       - arm64
     goarm:
-      - 7
+      - '7'
 
 archives:
   - name_template: "{{ .ProjectName }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
     format_overrides:
       - goos: windows
         format: zip
-    files:
-      - none*
+    # Removed the 'files: - none*' line. Add back with real files if needed.
+    # e.g., files: [ "LICENSE.md", "README.md" ]
 
 checksum:
   name_template: 'checksums.txt'
 
-# .goreleaser.yml
-
-# This section defines how to build the arch-specific images
+# This section now builds images for BOTH ghcr.io and Docker Hub
 dockers:
   - image_templates:
+      # Snapshot image for ghcr.io
       - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-{{ .Arch }}"
+      # Release image for Docker Hub
+      - "c0mmandercrud/{{ .ProjectName }}:v{{ .Version }}-{{ .Arch }}"
     goos: linux
     goarch: amd64
   - image_templates:
       - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-{{ .Arch }}"
+      - "c0mmandercrud/{{ .ProjectName }}:v{{ .Version }}-{{ .Arch }}"
     goos: linux
     goarch: arm64
   - image_templates:
       - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-{{ .Arch }}"
+      - "c0mmandercrud/{{ .ProjectName }}:v{{ .Version }}-{{ .Arch }}"
     goos: linux
     goarch: arm
     goarm: '7'
 
-# This section creates and PUSHES a multi-arch manifest to the registry
+# Manifests are created from the images built above
 docker_manifests:
+  # ghcr.io manifest for snapshot builds
   - name_template: "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}"
     image_templates:
       - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-amd64"
       - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-arm64"
       - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-armv7"
 
-  # dockerhub
+  # Docker Hub manifests for release builds
   - name_template: "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}"
     image_templates:
       - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-amd64"
       - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm64"
-      - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm7"
+      # Corrected from 'arm7' to 'armv7'
+      - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-armv7"
   - name_template: "c0mmandercrud/{{.ProjectName}}:latest"
     image_templates:
       - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-amd64"
       - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm64"
-      - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm7"
+      # Corrected from 'arm7' to 'armv7'
+      - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-armv7"
