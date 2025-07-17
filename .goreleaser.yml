@@ -1,3 +1,5 @@
+version: 2
+
 project_name: speedtest_exporter
 
 before:
