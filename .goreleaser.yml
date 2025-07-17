@@ -1,4 +1,5 @@
-version: 1
+# .goreleaser.yml
+version: 2
 
 project_name: speedtest_exporter
 
@@ -7,26 +8,16 @@ before:
     - go mod tidy
     - go test ./...
 
-# We now have a dedicated build block for each Linux architecture.
 builds:
-  - id: linux-amd64
+  # A single, dedicated build for the linux/amd64 Docker image
+  - id: docker
     main: ./cmd/speedtest_exporter/main.go
     env: [ "CGO_ENABLED=0" ]
     goos: [ "linux" ]
     goarch: [ "amd64" ]
-  - id: linux-arm64
-    main: ./cmd/speedtest_exporter/main.go
-    env: [ "CGO_ENABLED=0" ]
-    goos: [ "linux" ]
-    goarch: [ "arm64" ]
-  - id: linux-armv7
-    main: ./cmd/speedtest_exporter/main.go
-    env: [ "CGO_ENABLED=0" ]
-    goos: [ "linux" ]
-    goarch: [ "arm" ]
-    goarm: [ "7" ]
-  # A separate build for non-docker archives
-  - id: other-archives
+
+  # A separate build for other release archives (e.g., windows, mac)
+  - id: archives
     main: ./cmd/speedtest_exporter/main.go
     env: [ "CGO_ENABLED=0" ]
     goos: [ "windows", "darwin" ]
@@ -34,8 +25,9 @@ builds:
 
 archives:
   - id: default
-    # This will now use all the builds defined above
-    name_template: "{{ .ProjectName }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    builds:
+      - archives
+    name_template: "{{ .ProjectName }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     format_overrides:
       - goos: windows
         format: zip
@@ -43,38 +35,13 @@ archives:
 checksum:
   name_template: 'checksums.txt'
 
-# Each docker entry now implicitly matches one of the simple build blocks above.
+# A single Docker block that uses the dedicated 'docker' build from above.
+# The image tags no longer include the {{ .Arch }} variable.
 dockers:
-  - goos: linux
-    goarch: amd64
+  - builds:
+      - docker
     image_templates:
-      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-{{ .Arch }}"
-      - "c0mmandercrud/{{ .ProjectName }}:v{{ .Version }}-{{ .Arch }}"
-  - goos: linux
-    goarch: arm64
-    image_templates:
-      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-{{ .Arch }}"
-      - "c0mmandercrud/{{ .ProjectName }}:v{{ .Version }}-{{ .Arch }}"
-  - goos: linux
-    goarch: arm
-    goarm: '7'
-    image_templates:
-      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-{{ .Arch }}"
-      - "c0mmandercrud/{{ .ProjectName }}:v{{ .Version }}-{{ .Arch }}"
+      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}"
+      - "c0mmandercrud/{{ .ProjectName }}:latest-snapshot"
 
-docker_manifests:
-  - name_template: "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}"
-    image_templates:
-      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-amd64"
-      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-arm64"
-      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .ShortCommit }}-armv7"
-  - name_template: "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}"
-    image_templates:
-      - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-amd64"
-      - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm64"
-      - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-armv7"
-  - name_template: "c0mmandercrud/{{.ProjectName}}:latest"
-    image_templates:
-      - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-amd64"
-      - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-arm64"
-      - "c0mmandercrud/{{.ProjectName}}:v{{ .Version }}-armv7"
+# The docker_manifests section has been completely removed as it is not needed.
