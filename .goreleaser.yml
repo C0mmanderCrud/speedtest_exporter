@@ -23,5 +23,5 @@ dockers:
     image_templates:
       # Use the GITHUB_REPOSITORY_OWNER environment variable for correctness
       # The | lower filter is required as image names must be lowercase
-      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER | lower }}/{{ .ProjectName }}:latest"
-      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER | lower }}/{{ .ProjectName }}:{{ .Version }}"
+      - "ghcr.io/c0mmandercrud/{{ .ProjectName }}:latest"
+      - "ghcr.io/c0mmandercrud/{{ .ProjectName }}:{{ .Version }}"
