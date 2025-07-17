@@ -15,14 +15,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Slack Start Report
-        uses: act10ns/slack@v1.2.2
-        if: always()
-        with:
-          status: starting
-          channel: '#github-actions'
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v1.10.0
         with:
@@ -38,24 +30,8 @@ jobs:
         with:
           go-version: 1.24.5
 
-      - name: Lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          skip-go-installation: true
-
       - name: Build
         uses: goreleaser/goreleaser-action@v2.7.0
         with:
           version: latest
           args: release --snapshot --rm-dist
-
-      - name: Slack Finish Report
-        uses: act10ns/slack@v1.2.2
-        if: always()
-        with:
-          status: ${{ job.status }}
-          steps: ${{ toJson(steps) }}
-          channel: '#github-actions'
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
-          # force update
