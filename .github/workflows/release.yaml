@@ -11,6 +11,9 @@ env:
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
     steps:
       - name: Slack Start Report
         uses: act10ns/slack@v1.2.2
