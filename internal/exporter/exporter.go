@@ -2,6 +2,7 @@ package exporter
 
 import (
 	"fmt"
+	"strings" // Added for the URL fix
 	"time"
 
 	"github.com/google/uuid"
@@ -12,6 +13,9 @@ import (
 
 const (
 	namespace = "speedtest"
+	// Sanity threshold for speed values. If a value is > 20,000,
+	// we assume it's an anomaly reported in B/s, not Mbps.
+	speedThreshold = 20000.0
 )
 
 var (
@@ -33,13 +37,13 @@ var (
 	)
 	upload = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "upload_speed_Bps"),
-		"Last upload speedtest result",
+		"Last upload speedtest result in Bytes per second",
 		[]string{"test_uuid", "user_lat", "user_lon", "user_ip", "user_isp", "server_lat", "server_lon", "server_id", "server_name", "server_country", "distance"},
 		nil,
 	)
 	download = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "download_speed_Bps"),
-		"Last download speedtest result",
+		"Last download speedtest result in Bytes per second",
 		[]string{"test_uuid", "user_lat", "user_lon", "user_ip", "user_isp", "server_lat", "server_lon", "server_id", "server_name", "server_country", "distance"},
 		nil,
 	)
@@ -69,27 +73,21 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	ch <- download
 }
 
-// Collect fetches the stats from Starlink dish and delivers them
-// as Prometheus metrics. It implements prometheus.Collector.
+// Collect fetches the stats and delivers them as Prometheus metrics.
+// It implements prometheus.Collector.
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	testUUID := uuid.New().String()
 	start := time.Now()
 	ok := e.speedtest(testUUID, ch)
 
+	// Always report up and scrape_duration, regardless of test success
+	duration := time.Since(start).Seconds()
+	ch <- prometheus.MustNewConstMetric(scrapeDurationSeconds, prometheus.GaugeValue, duration, testUUID)
+
 	if ok {
-		ch <- prometheus.MustNewConstMetric(
-			up, prometheus.GaugeValue, 1.0,
-			testUUID,
-		)
-		ch <- prometheus.MustNewConstMetric(
-			scrapeDurationSeconds, prometheus.GaugeValue, time.Since(start).Seconds(),
-			testUUID,
-		)
+		ch <- prometheus.MustNewConstMetric(up, prometheus.GaugeValue, 1.0, testUUID)
 	} else {
-		ch <- prometheus.MustNewConstMetric(
-			up, prometheus.GaugeValue, 0.0,
-			testUUID,
-		)
+		ch <- prometheus.MustNewConstMetric(up, prometheus.GaugeValue, 0.0, testUUID)
 	}
 }
 
@@ -100,7 +98,6 @@ func (e *Exporter) speedtest(testUUID string, ch chan<- prometheus.Metric) bool 
 		return false
 	}
 
-	// returns list of servers in distance order
 	serverList, err := speedtest.FetchServerList(user)
 	if err != nil {
 		log.Errorf("could not fetch server list: %s", err.Error())
@@ -110,27 +107,52 @@ func (e *Exporter) speedtest(testUUID string, ch chan<- prometheus.Metric) bool 
 	var server *speedtest.Server
 
 	if e.serverID == -1 {
+		if len(serverList.Servers) == 0 {
+			log.Error("server list is empty, cannot select the closest server")
+			return false
+		}
 		server = serverList.Servers[0]
 	} else {
 		servers, err := serverList.FindServer([]int{e.serverID})
 		if err != nil {
-			log.Error(err)
+			log.Errorf("failed to find server with ID %d: %v", e.serverID, err)
 			return false
 		}
 
-		if servers[0].ID != fmt.Sprintf("%d", e.serverID) && !e.serverFallback {
-			log.Errorf("could not find your choosen server ID %d in the list of avaiable servers, server_fallback is not set so failing this test", e.serverID)
-			return false
+		if len(servers) == 0 {
+			log.Errorf("could not find your chosen server ID %d in the list of available servers", e.serverID)
+			if !e.serverFallback {
+				log.Info("server_fallback is not enabled, failing this test")
+				return false
+			}
+			log.Info("server_fallback is enabled, falling back to the closest server")
+			if len(serverList.Servers) == 0 {
+				log.Error("server list is empty, cannot fall back to the closest server")
+				return false
+			}
+			server = serverList.Servers[0]
+		} else {
+			server = servers[0]
 		}
-
-		server = servers[0]
 	}
 
-	ok := pingTest(testUUID, user, server, ch)
-	ok = downloadTest(testUUID, user, server, ch) && ok
-	ok = uploadTest(testUUID, user, server, ch) && ok
+	// WORKAROUND: Detect and correct malformed URLs (e.g., "http//...")
+	// that can be produced by the speedtest-go library or server lists.
+	if strings.HasPrefix(server.URL, "http//") {
+		correctedURL := strings.Replace(server.URL, "http//", "http://", 1)
+		log.Warnf("Malformed server URL detected, correcting from '%s' to '%s'", server.URL, correctedURL)
+		server.URL = correctedURL
+	}
 
-	return ok
+	log.Infof("Starting speedtest with server %s (%s, %s) [id: %s]", server.Name, server.Country, server.Host, server.ID)
+
+	// Run all tests and report individual success/failure.
+	pingSuccess := pingTest(testUUID, user, server, ch)
+	downloadSuccess := downloadTest(testUUID, user, server, ch)
+	uploadSuccess := uploadTest(testUUID, user, server, ch)
+
+	// The overall test is successful if all parts succeed.
+	return pingSuccess && downloadSuccess && uploadSuccess
 }
 
 func pingTest(testUUID string, user *speedtest.User, server *speedtest.Server, ch chan<- prometheus.Metric) bool {
@@ -142,19 +164,10 @@ func pingTest(testUUID string, user *speedtest.User, server *speedtest.Server, c
 
 	ch <- prometheus.MustNewConstMetric(
 		latency, prometheus.GaugeValue, server.Latency.Seconds(),
-		testUUID,
-		user.Lat,
-		user.Lon,
-		user.IP,
-		user.Isp,
-		server.Lat,
-		server.Lon,
-		server.ID,
-		server.Name,
-		server.Country,
-		fmt.Sprintf("%f", server.Distance),
+		testUUID, user.Lat, user.Lon, user.IP, user.Isp,
+		server.Lat, server.Lon, server.ID, server.Name, server.Country, fmt.Sprintf("%f", server.Distance),
 	)
-
+	log.Infof("Ping test successful. Latency: %s", server.Latency)
 	return true
 }
 
@@ -165,38 +178,24 @@ func downloadTest(testUUID string, user *speedtest.User, server *speedtest.Serve
 		return false
 	}
 
-	// Extract the raw numeric value from the speedtest result
-	rawValue := float64(server.DLSpeed)
+	rawValue := server.DLSpeed
 	var speedBps float64
-	// due to some servers running older versions of speedtest they report diffrent metrics in ether bps or mbps covert if over value
-	// if the raw value is very large (> 20,000), assumein Bytes/sec
-	// otherwise, we assume it's in Megabits/sec (Mbps) and convert it
-	// change value for sanity check assuming here noone has more than 26gbit lines and allows for minimum speeds to be reported in bytes of 20kb/s to be reported
-	if rawValue > 26000 {
-		log.Warnf("Anomalously high speed value detected (%.2f). Assuming unit is Bytes/sec.", rawValue)
-		speedBps = rawValue
+
+	// Heuristic to handle inconsistent units from different speedtest servers.
+	if rawValue > speedThreshold {
+		log.Warnf("Anomalously high download speed value detected (%.2f). Assuming unit is Bytes/sec.", rawValue)
+		speedBps = rawValue // Assume value is already in Bytes/sec
 	} else {
-		// if the value is in a normal range for Mbps, convert it to Bytes/sec.
-		// 1 Mbps = 125,000 B/s
-		// else ignore
+		// Assume value is in Mbps, convert to Bytes/sec (1 Mbps = 125,000 B/s)
 		speedBps = rawValue * 125000
 	}
 
 	ch <- prometheus.MustNewConstMetric(
 		download, prometheus.GaugeValue, speedBps,
-		testUUID,
-		user.Lat,
-		user.Lon,
-		user.IP,
-		user.Isp,
-		server.Lat,
-		server.Lon,
-		server.ID,
-		server.Name,
-		server.Country,
-		fmt.Sprintf("%f", server.Distance),
+		testUUID, user.Lat, user.Lon, user.IP, user.Isp,
+		server.Lat, server.Lon, server.ID, server.Name, server.Country, fmt.Sprintf("%f", server.Distance),
 	)
-
+	log.Infof("Download test successful. Speed: %.2f B/s (%.2f MB/s)", speedBps, speedBps/1000/1000)
 	return true
 }
 
@@ -207,33 +206,23 @@ func uploadTest(testUUID string, user *speedtest.User, server *speedtest.Server,
 		return false
 	}
 
-	// Extract the raw numeric value from the speedtest result
-	rawValue := float64(server.ULSpeed)
+	rawValue := server.ULSpeed
 	var speedBps float64
 
 	// Heuristic to handle inconsistent units from different speedtest servers.
-	if rawValue > 26000 {
-		log.Warnf("Anomalously high speed value detected (%.2f). Assuming unit is Bytes/sec.", rawValue)
-		speedBps = rawValue
+	if rawValue > speedThreshold {
+		log.Warnf("Anomalously high upload speed value detected (%.2f). Assuming unit is Bytes/sec.", rawValue)
+		speedBps = rawValue // Assume value is already in Bytes/sec
 	} else {
-		// If the value is in a normal range for Mbps, convert it to Bytes/sec.
+		// Assume value is in Mbps, convert to Bytes/sec (1 Mbps = 125,000 B/s)
 		speedBps = rawValue * 125000
 	}
 
 	ch <- prometheus.MustNewConstMetric(
 		upload, prometheus.GaugeValue, speedBps,
-		testUUID,
-		user.Lat,
-		user.Lon,
-		user.IP,
-		user.Isp,
-		server.Lat,
-		server.Lon,
-		server.ID,
-		server.Name,
-		server.Country,
-		fmt.Sprintf("%f", server.Distance),
+		testUUID, user.Lat, user.Lon, user.IP, user.Isp,
+		server.Lat, server.Lon, server.ID, server.Name, server.Country, fmt.Sprintf("%f", server.Distance),
 	)
-
+	log.Infof("Upload test successful. Speed: %.2f B/s (%.2f MB/s)", speedBps, speedBps/1000/1000)
 	return true
 }
