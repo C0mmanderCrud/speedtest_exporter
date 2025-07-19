@@ -165,8 +165,25 @@ func downloadTest(testUUID string, user *speedtest.User, server *speedtest.Serve
 		return false
 	}
 
+	// Extract the raw numeric value from the speedtest result
+	rawValue := float64(server.DLSpeed)
+	var speedBps float64
+	// due to some servers running older versions of speedtest they report diffrent metrics in ether bps or mbps covert if over value
+	// if the raw value is very large (> 20,000), assumein Bytes/sec
+	// otherwise, we assume it's in Megabits/sec (Mbps) and convert it
+	// change value for sanity check assuming here noone has more than 26gbit lines and allows for minimum speeds to be reported in bytes of 20kb/s to be reported
+	if rawValue > 26000 {
+		log.Warnf("Anomalously high speed value detected (%.2f). Assuming unit is Bytes/sec.", rawValue)
+		speedBps = rawValue
+	} else {
+		// if the value is in a normal range for Mbps, convert it to Bytes/sec.
+		// 1 Mbps = 125,000 B/s
+		// else ignore
+		speedBps = rawValue * 125000
+	}
+
 	ch <- prometheus.MustNewConstMetric(
-		download, prometheus.GaugeValue, server.DLSpeed*1024*1024,
+		download, prometheus.GaugeValue, speedBps,
 		testUUID,
 		user.Lat,
 		user.Lon,
@@ -190,8 +207,21 @@ func uploadTest(testUUID string, user *speedtest.User, server *speedtest.Server,
 		return false
 	}
 
+	// Extract the raw numeric value from the speedtest result
+	rawValue := float64(server.ULSpeed)
+	var speedBps float64
+
+	// Heuristic to handle inconsistent units from different speedtest servers.
+	if rawValue > 26000 {
+		log.Warnf("Anomalously high speed value detected (%.2f). Assuming unit is Bytes/sec.", rawValue)
+		speedBps = rawValue
+	} else {
+		// If the value is in a normal range for Mbps, convert it to Bytes/sec.
+		speedBps = rawValue * 125000
+	}
+
 	ch <- prometheus.MustNewConstMetric(
-		upload, prometheus.GaugeValue, server.ULSpeed*1024*1024,
+		upload, prometheus.GaugeValue, speedBps,
 		testUUID,
 		user.Lat,
 		user.Lon,
