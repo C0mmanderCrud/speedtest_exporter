@@ -2,7 +2,7 @@ package exporter
 
 import (
 	"fmt"
-	"strings" // Added for the URL fix
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,9 +13,6 @@ import (
 
 const (
 	namespace = "speedtest"
-	// Sanity threshold for speed values. If a value is > 20,000,
-	// we assume it's an anomaly reported in B/s, not Mbps.
-	speedThreshold = 20000.0
 )
 
 var (
@@ -155,6 +152,28 @@ func (e *Exporter) speedtest(testUUID string, ch chan<- prometheus.Metric) bool 
 	return pingSuccess && downloadSuccess && uploadSuccess
 }
 
+// New normalizeSpeed function to handle multiple units
+func normalizeSpeed(rawValue float64) float64 {
+	// A. Check for Gbps (Gigabits per second)
+	if rawValue > 0 && rawValue < 20 {
+		return rawValue * 125000000 // Convert Gbps to Bytes/sec
+	}
+	// B. Check for Mbps (Megabits per second)
+	if rawValue >= 20 && rawValue < 20000 {
+		return rawValue * 125000 // Convert Mbps to Bytes/sec
+	}
+	// C. Check for Kbps (Kilobits per second)
+	if rawValue >= 20000 && rawValue < 20000000 {
+		return rawValue * 125 // Convert Kbps to Bytes/sec
+	}
+	// D. If the value is very large, it's likely bits per second.
+	if rawValue >= 20000000 {
+		return rawValue / 8 // Convert bits/sec to Bytes/sec
+	}
+	// Fallback for very small or unexpected values
+	return rawValue / 8
+}
+
 func pingTest(testUUID string, user *speedtest.User, server *speedtest.Server, ch chan<- prometheus.Metric) bool {
 	err := server.PingTest()
 	if err != nil {
@@ -179,16 +198,8 @@ func downloadTest(testUUID string, user *speedtest.User, server *speedtest.Serve
 	}
 
 	rawValue := server.DLSpeed
-	var speedBps float64
-
-	// Heuristic to handle inconsistent units from different speedtest servers.
-	if rawValue > speedThreshold {
-		log.Warnf("Anomalously high download speed value detected (%.2f). Assuming unit is Bytes/sec.", rawValue)
-		speedBps = rawValue // Assume value is already in Bytes/sec
-	} else {
-		// Assume value is in Mbps, convert to Bytes/sec (1 Mbps = 125,000 B/s)
-		speedBps = rawValue * 125000
-	}
+	// Use the new function to normalize the speed
+	speedBps := normalizeSpeed(rawValue)
 
 	ch <- prometheus.MustNewConstMetric(
 		download, prometheus.GaugeValue, speedBps,
@@ -207,16 +218,8 @@ func uploadTest(testUUID string, user *speedtest.User, server *speedtest.Server,
 	}
 
 	rawValue := server.ULSpeed
-	var speedBps float64
-
-	// Heuristic to handle inconsistent units from different speedtest servers.
-	if rawValue > speedThreshold {
-		log.Warnf("Anomalously high upload speed value detected (%.2f). Assuming unit is Bytes/sec.", rawValue)
-		speedBps = rawValue // Assume value is already in Bytes/sec
-	} else {
-		// Assume value is in Mbps, convert to Bytes/sec (1 Mbps = 125,000 B/s)
-		speedBps = rawValue * 125000
-	}
+	// Use the new function to normalize the speed
+	speedBps := normalizeSpeed(rawValue)
 
 	ch <- prometheus.MustNewConstMetric(
 		upload, prometheus.GaugeValue, speedBps,
